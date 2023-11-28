@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Chart Rooms</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+    <script src='main.js'></script>
+</head>
+<body>
+    <h1>Chart Rooms</h1>
+    <div id="rooms-container"></div>
+</body>
+<script>
+    let getRooms= async () =>{
+       let response= await fetch('http://http://127.0.0.1:8000/api/rooms/')
+       console.log('RESPONSE:', response)
+    }
+    getRooms()
+</script>
+</html>

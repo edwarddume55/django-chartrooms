@@ -1,11 +1,9 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
-from .models import Room,Topic,Message
+from .models import Room,Topic,Message,User
 from django.contrib.auth import authenticate,login,logout
-from django.contrib.auth.models import User
-from .forms import RoomForm, UserForm
+from .forms import RoomForm, UserForm,MyUserCreationForm
 from django.db.models import Q
-from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 # Create your views here.
@@ -22,15 +20,15 @@ def loginPage(request):
         return redirect('home')
 
     if request.method=='POST':
-        username= request.POST.get('username').lower()
+        email= request.POST.get('email').lower()
         password = request.POST.get('password')
 
         try:
-            user=User.objects.get(username=username)
+            user=User.objects.get(email=email)
         except:
             messages.error(request,'User does not exist')
 
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, email=email , password=password)
 
         if user is not None:
             login(request,user)
@@ -51,10 +49,10 @@ def logoutUser(request):
 
 def registerPage(request):
     page='register'
-    form= UserCreationForm()
+    form= MyUserCreationForm()
 
     if request.method =='POST':
-        form =UserCreationForm(request.POST)
+        form =MyUserCreationForm(request.POST)
         if form.is_valid():
             user=form.save(commit=False)
             user.username = user.username.lower()
@@ -62,7 +60,7 @@ def registerPage(request):
             login(request,user)
             return redirect('home')
         else:
-            messages.error(request, 'An error occured during registration')
+            messages.error(request, 'An error occured during registration kindly check your details!')
 
 
 
@@ -77,19 +75,19 @@ def home(request):
         Q(description__icontains=q)
         )
 
-    topics=Topic.objects.all()
+    topics=Topic.objects.all()[0:5]
     room_count = rooms.count()
     room_messages =Message.objects.filter(Q(room__topic__name__icontains=q))
 
     context={'rooms': rooms, 'topics': topics, 'room_count':room_count,'room_messages':room_messages }
     return render(request, 'base/home.html', context)
 
-
+@login_required (login_url='login')
 def room(request, pk):
     room = Room.objects.get(id=pk)
     room_messages= room.message_set.all().order_by('-created')
     participants = room.participants.all()
-
+   
     if request.method=='POST':
         message=Message.objects.create(
             user=request.user,
@@ -125,7 +123,7 @@ def createRoom(request):
             host=request.user,
             topic=topic,
             name=request.POST.get('name'),
-            descriprion=request.Post.get('description'),
+            description=request.POST.get('description'),
         )
         return redirect('home')
     
@@ -188,9 +186,20 @@ def updateUser(request):
     form = UserForm(instance=user)
 
     if request.method=='POST':
-        form=UserForm(request.POST, instance=user)
+        form=UserForm(request.POST, request.FILES, instance=user)
         if form.is_valid():
             form.save()
             return redirect('user-profile',pk=user.id)
 
     return render(request, 'base/update-user.html', {'form':form})
+
+
+def topicsPage(request): 
+    q=request.GET.get('q') if request.GET.get('q') != None else ''
+    topics = topics.object.filter(name__icontains=q)
+    return render(request, 'base/topics.html',{'topics':topics})
+
+
+def activityPage(request):
+    room_messages=Message.objects.all()
+    return render(request, 'base/activity.html',{'room_message':room_messages})
